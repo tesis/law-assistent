@@ -37,28 +37,27 @@ class RagService
         ]);
     }
 
-    // Čisti vektorski search
     public function vectorSearch(string $q, string $tenantId, int $k = 6): array
     {
-        $qVec = $this->embed($q);
-        $qSql = sprintf('[%s]', implode(',', $qVec));
+        $qVec = $this->embed($q);                            // [floats]
+        $qVecStr = '['.implode(',', $qVec).']';              // "[..., ...]"
 
-        $rows = DB::select("
-          SELECT id, source, title, citation, url, text,
-                 1 - (embedding <=> {$qSql}) AS score
-          FROM law_chunks
-          WHERE tenant_id IN ('PUBLIC', ?)
-          ORDER BY embedding <=> {$qSql} ASC
-          LIMIT {$k}
-        ", [$tenantId]);
+        $rows = \DB::select("
+            SELECT id, source, title, citation, url, text,
+                   1 - (embedding <=> ?::vector) AS score
+            FROM law_chunks
+            WHERE tenant_id IN ('PUBLIC', ?)
+            ORDER BY embedding <=> ?::vector ASC
+            LIMIT {$k}
+        ", [$qVecStr, $tenantId, $qVecStr]);
 
         return array_map(fn($r)=>(array)$r, $rows);
     }
 
-    // Hibrid: najprej BM25, nato vektor re-rank
     public function hybridSearch(string $q, string $tenantId, int $k = 6, int $bm25N = 100): array
     {
-        $bm25 = DB::select("
+        // 1) BM25 kandidati
+        $bm25 = \DB::select("
           SELECT id, ts_rank(to_tsvector('simple', text), plainto_tsquery('simple', ?)) AS r
           FROM law_chunks
           WHERE tenant_id IN ('PUBLIC', ?)
@@ -71,17 +70,18 @@ class RagService
 
         $ids = implode("','", array_map(fn($x)=>$x->id, $bm25));
 
+        // 2) vektorski re-rank med kandidati
         $qVec = $this->embed($q);
-        $qSql = sprintf('[%s]', implode(',', $qVec));
+        $qVecStr = '['.implode(',', $qVec).']';
 
-        $rows = DB::select("
+        $rows = \DB::select("
           SELECT id, source, title, citation, url, text,
-                 1 - (embedding <=> {$qSql}) AS score
+                 1 - (embedding <=> ?::vector) AS score
           FROM law_chunks
           WHERE id IN ('{$ids}')
-          ORDER BY embedding <=> {$qSql} ASC
+          ORDER BY embedding <=> ?::vector ASC
           LIMIT {$k}
-        ");
+        ", [$qVecStr, $qVecStr]);
 
         return array_map(fn($r)=>(array)$r, $rows);
     }
