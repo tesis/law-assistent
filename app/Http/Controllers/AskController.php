@@ -23,11 +23,22 @@ class AskController extends Controller
             ]);
         }
 
-        $answer = $rag->answer($data['q'], $chunks);
-        $cites = collect($chunks)->take(4)->map(fn($c)=>[
-            'title'=>$c['title'], 'citation'=>$c['citation'], 'url'=>$c['url']
-        ])->values();
+        $minScore = 0.75; // prilagodi po občutku/meritvah
+        $relevant = collect($chunks)->filter(fn($c) => ($c['score'] ?? 0) >= $minScore)->values()->all();
 
-        return response()->json(['answer'=>$answer, 'citations'=>$cites]);
+        if (empty($relevant)) {
+            return response()->json([
+                'answer' => 'V trenutnih virih nimam dovolj informacij za “invalidnost”. Dodajmo ZPIZ-2, ZZRZI ali ZIMI, ali prosim natančneje opiši kontekst.',
+                'citations' => []
+            ]);
+        }
+
+        // $answer = $rag->answer($data['q'], $chunks);
+        $answer = $rag->answer($data['q'], $relevant);
+        $cites = collect($relevant)->take(4)->map(fn($c)=>[
+          'title'=>$c['title'],'citation'=>$c['citation'],'url'=>$c['url']
+        ]);
+        
+        return response()->json(['answer'=>$answer,'citations'=>$cites]);
     }
 }
