@@ -29,6 +29,7 @@ class RagService
             'title' => $payload['title'],
             'citation' => $payload['citation'],
             'url' => $payload['url'],
+            'law_id'    => $payload['law_id'],
             'text' => $payload['text'],
             'embedding_model' => 'text-embedding-3-small',
             'embedding' => sprintf('[%s]', implode(',', $vec)),

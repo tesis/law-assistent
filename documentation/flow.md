@@ -204,3 +204,94 @@ Uporabil bom **Mermaid renderer**, ki iz zgornje definicije nariše sliko.
 ---
 
 👉 Bi želela, da ti jih izmermaidam še v **lokalni SVG/PNG datoteki** (da jih imaš offline, ne vezane na zunanji link)?
+
+Odlično ✅. Narisal sem ti **lokalne PNG diagrame**, ki jih lahko odpreš ali vstaviš v dokumentacijo:
+
+* 📊 Q\&A tok: [qa\_flow.png](sandbox:/mnt/data/qa_flow.png)
+* 📥 Ingest tok: [ingest\_flow.png](sandbox:/mnt/data/ingest_flow.png)
+
+(already in documentation)
+
+## kako bo deloval Ai asistent - ali moram vse zakone vnesti v podatkovno bazo, vse vire, vse sodbe .... ?
+
+Super vprašanje 👌 – zdaj si prišla do bistva: **od kod tvoj AI pravni asistent dobi “pamet”**.
+
+---
+
+## 1️⃣ Kaj AI sam NE zna
+
+OpenAI (ali katerikoli LLM) **sam po sebi ne pozna slovenske zakonodaje** v natančni, zanesljivi obliki, še posebej:
+
+* ažurnih verzij zakonov (spreminjajo se),
+* uradnih objav (PISRS, EUR-Lex, sodna praksa),
+* slovenskih pravnih pojmov.
+
+Če bi LLM vprašala kar “kateri člen ureja invalidnost”, bi iz “splošnega znanja” nekaj uganil — a to **ni pravno zanesljivo** in za resne uporabnike nesprejemljivo.
+
+👉 Zato moraš mu **ti sama dati kontekst** = člene, akte, sodbe.
+
+---
+
+## 2️⃣ Kako mu daješ znanje (RAG = Retrieval Augmented Generation)
+
+* Vsak zakon, člen, sodba → “chunk” (kos besedila, npr. en člen).
+* Ta chunk shraniš v bazo (Postgres z `pgvector`).
+* Ob vprašanju uporabnika narediš embedding vprašanja in poiščeš najbližje chanke.
+* Te pošlješ v LLM → ta generira odgovor *na podlagi virov*, ne iz spomina.
+
+To pomeni: **AI ve samo toliko, kolikor si mu “založila” v bazo.**
+
+---
+
+## 3️⃣ Ali moraš vnesti *vse* zakone in sodbe?
+
+Ne nujno, odvisno od cilja:
+
+* **MVP / demo za odvetnico**: vneseš samo nekaj ključnih zakonov (npr. ZDR-1, OZ, ZPP, ZPIZ-2).
+* **Produkcija (pravni asistent za širšo uporabo)**:
+
+  * *zakoni in predpisi*: lahko avtomatsko preneseš iz **PISRS** (ima API).
+  * *sodna praksa*: lahko začneš z nekaj pomembnimi bazami (npr. odločbe Vrhovnega sodišča, USRS).
+  * *EU pravo*: EUR-Lex ima API (direktive, uredbe, sodbe SEU).
+
+---
+
+## 4️⃣ Kako v praksi vnesti vire
+
+* **Zakoni**: 1x uvoz (scrape ali API iz PISRS), nato dnevno spremljanje sprememb.
+* **Sodbe**: odvisno od vira → lahko 1x batch + nato redno dodajanje novih.
+* **Zasebni dokumenti strank** (če bo SaaS za odvetnike): ti se hranijo pod `tenant_id`, ločeno od PUBLIC zakonodaje.
+
+---
+
+## 5️⃣ Kaj se zgodi, če vira NI v bazi?
+
+* Po tvojem guardrailu AI pove nekaj takega:
+
+  > “V trenutnih virih ni podatkov o invalidnosti. Za zanesljiv odgovor je treba dodati ZPIZ-2 ali ZZRZI.”
+* S tem se izogneš “halucinaciji” in zaupanje ostane.
+
+---
+
+## 6️⃣ Kako začeti pragmatično
+
+Ne rabiš takoj vse Slovenije + EU:
+
+1. Za demo → **ZDR-1 + OZ + ZPP** (že 80 % delovnih vprašanj).
+2. Za invalidnost → dodaj **ZPIZ-2, ZZRZI, ZIMI**.
+3. Postopoma dodajaj zakone glede na potrebe uporabnikov.
+
+Kasneje narediš **scheduled crawler** za PISRS/EUR-Lex, ki bo baze sproti posodabljal.
+
+---
+
+## 🎯 Povzetek
+
+* Da, **moraš vnesti zakone/sodbe v bazo**, ker LLM sam ne bo zanesljivo poznal vsebine.
+* Ne rabiš pa “vseh naenkrat” → začneš s tistimi, ki so za tvojo ciljno publiko najpomembnejši.
+* Kasneje avtomatiziraš ingest in vzdrževanje baze.
+
+---
+
+👉 Bi želela, da ti konkretno pokažem **primer, kako avtomatsko potegniti zakon iz PISRS (npr. ZDR-1)** in ga razbiješ na člene, da jih lahko daš v svojo bazo?
+

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ArticleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -7,3 +8,6 @@ Route::get('/', function () {
 });
 
 Route::get('/ask-demo', fn() => view('ask'));
+
+Route::get('/laws/{mopedId}', [ArticleController::class, 'page'])->name('laws.show');
+

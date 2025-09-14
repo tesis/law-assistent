@@ -11,7 +11,8 @@ class LawChunk extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id','tenant_id','source','title','citation','url','text','embedding_model'
+        'id','tenant_id','source','title','citation','url','text','embedding_model', 'law_id'
+        // 'law_id','text_sha256','valid_from','valid_to'
     ];
 
     protected static function booted() {

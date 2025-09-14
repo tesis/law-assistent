@@ -16,29 +16,22 @@ class AskController extends Controller
             ? $rag->vectorSearch($data['q'], $tenantId, 6)
             : $rag->hybridSearch($data['q'], $tenantId, 6, 100);
 
-        if (empty($chunks)) {
-            return response()->json([
-                'answer' => 'Za zanesljiv odgovor nimam dovolj konteksta. Poskusi navesti zakon ali člen.',
-                'citations' => []
-            ]);
-        }
-
-        $minScore = 0.75; // prilagodi po občutku/meritvah
+        // Relevance threshold to avoid misleading citations
+        $minScore = 0.5; // 0.75 doesn't show results
         $relevant = collect($chunks)->filter(fn($c) => ($c['score'] ?? 0) >= $minScore)->values()->all();
 
         if (empty($relevant)) {
             return response()->json([
-                'answer' => 'V trenutnih virih nimam dovolj informacij za “invalidnost”. Dodajmo ZPIZ-2, ZZRZI ali ZIMI, ali prosim natančneje opiši kontekst.',
+                'answer' => 'Za zanesljiv odgovor nimam dovolj konteksta (ali virov). Poskusi navesti zakon ali člen, ali dodajmo več virov v bazo (npr. ZPIZ-2, ZZRZI, ZIMI).',
                 'citations' => []
             ]);
         }
 
-        // $answer = $rag->answer($data['q'], $chunks);
         $answer = $rag->answer($data['q'], $relevant);
         $cites = collect($relevant)->take(4)->map(fn($c)=>[
-          'title'=>$c['title'],'citation'=>$c['citation'],'url'=>$c['url']
-        ]);
-        
-        return response()->json(['answer'=>$answer,'citations'=>$cites]);
+            'title'=>$c['title'], 'citation'=>$c['citation'], 'url'=>$c['url']
+        ])->values();
+
+        return response()->json(['answer'=>$answer, 'citations'=>$cites]);
     }
 }
