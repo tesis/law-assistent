@@ -31,7 +31,7 @@ class PisrsApi
     {
         $url = "{$this->base}/api/rezultat/zbirka/id/{$mopedId}";
         $res = $this->client()->acceptJson()->get($url);
-        $this->logPreview('GET zbirka', $url, $res->status(), $res->header('Content-Type'), $res->body());
+        // $this->logPreview('GET zbirka', $url, $res->status(), $res->header('Content-Type'), $res->body());
         $res->throw();
         return $res->json(); // downstream code should use data_get(..., 'data.*')
     }
