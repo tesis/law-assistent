@@ -161,8 +161,13 @@ class PisrsApiTest extends TestCase
         $npbId = 55;
         $url = "{$this->base}/api/rezultat/neuradno-precisceno-besedilo/{$npbId}/details";
 
+        // Http::fake() stubs are tried in registration order, so a second
+        // Http::fake() call for the same URL would never override the first
+        // — use a sequence to return the two responses in order instead.
         Http::fake([
-            $url => Http::response(['data' => ['links' => []]], 200, ['Content-Type' => 'application/json']),
+            $url => Http::sequence()
+                ->push(['data' => ['links' => []]], 200, ['Content-Type' => 'application/json'])
+                ->push('Nope', 404),
         ]);
 
         $api = new PisrsApi($this->base, $this->apiKey);
@@ -175,10 +180,6 @@ class PisrsApiTest extends TestCase
                 && $req->hasHeader('Accept', 'application/json')
                 && $req->hasHeader('X-API-Key', 'TESTKEY');
         });
-
-        Http::fake([
-            $url => Http::response('Nope', 404),
-        ]);
 
         $this->expectException(RequestException::class);
         $api->getNpbDetails($npbId);
