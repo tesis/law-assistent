@@ -185,8 +185,6 @@ This is a working prototype / portfolio project, not a production system. Known 
 
 - No authentication/authorization on the API yet — `tenant_id` scoping exists in the schema and
   retrieval layer but isn't wired to a real auth system.
-- A couple of service classes have in-progress duplicate variants (`*Api1.php`) kept during active
-  iteration on the PISRS parsing strategy.
 - Test coverage focuses on the trickiest part of the pipeline (HTML article extraction); the ask/
   retrieval flow doesn't yet have integration tests against a live-ish database.
 
